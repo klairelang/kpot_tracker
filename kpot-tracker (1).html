@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KPOT Tally — Track Your Plate</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=Work+Sans:wght@400;500;600;700&display=swap');
+
+  :root{
+    --teal-950:#0d1e1f;
+    --teal-900:#132b2c;
+    --teal-800:#1c3a3b;
+    --teal-700:#27494a;
+    --cream:#f3ecdd;
+    --cream-dim:#cdc4ad;
+    --red:#d33a2c;
+    --red-dim:#a8291e;
+    --green:#8ea87a;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--teal-950);
+    color:var(--cream);
+    font-family:'Work Sans',sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  h1,h2,.display{
+    font-family:'Archivo Black',sans-serif;
+    font-weight:400;
+    letter-spacing:0.01em;
+  }
+
+  /* ---------- Top tally bar ---------- */
+  .tally-bar{
+    position:sticky;
+    top:0;
+    z-index:50;
+    background:var(--teal-900);
+    border-bottom:3px solid var(--red);
+    padding:14px 20px;
+  }
+  .tally-inner{
+    max-width:1200px;
+    margin:0 auto;
+    display:flex;
+    align-items:center;
+    gap:18px;
+    flex-wrap:wrap;
+  }
+  .brand{
+    display:flex;
+    align-items:baseline;
+    gap:8px;
+    margin-right:auto;
+  }
+  .brand .k{
+    background:var(--red);
+    color:var(--cream);
+    font-family:'Archivo Black',sans-serif;
+    font-size:20px;
+    padding:4px 9px;
+    border-radius:4px;
+    line-height:1;
+  }
+  .brand .sub{
+    font-size:12px;
+    color:var(--cream-dim);
+    letter-spacing:0.04em;
+  }
+  .tally-stats{
+    display:flex;
+    gap:22px;
+    flex-wrap:wrap;
+  }
+  .tally-stat{
+    text-align:right;
+    min-width:78px;
+  }
+  .tally-stat .num{
+    font-family:'Archivo Black',sans-serif;
+    font-size:26px;
+    line-height:1;
+    transition:transform .15s ease;
+  }
+  .tally-stat.pop .num{ transform:scale(1.18); color:var(--red); }
+  .tally-stat .label{
+    font-size:11px;
+    color:var(--cream-dim);
+    margin-top:3px;
+  }
+  .reset-btn{
+    background:none;
+    border:1.5px solid var(--cream-dim);
+    color:var(--cream-dim);
+    border-radius:6px;
+    padding:8px 14px;
+    font-size:12px;
+    cursor:pointer;
+    font-family:'Work Sans',sans-serif;
+  }
+  .reset-btn:hover{border-color:var(--red);color:var(--red);}
+
+  /* ---------- Controls ---------- */
+  .controls{
+    max-width:1200px;
+    margin:22px auto 0;
+    padding:0 20px;
+    display:flex;
+    gap:12px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+  .chips{
+    display:flex;
+    gap:8px;
+    overflow-x:auto;
+    padding-bottom:4px;
+    max-width:1200px;
+    margin:16px auto 0;
+    padding-left:20px;
+    padding-right:20px;
+  }
+  .chip{
+    flex:0 0 auto;
+    background:var(--teal-800);
+    border:1px solid var(--teal-700);
+    color:var(--cream-dim);
+    padding:8px 16px;
+    border-radius:100px;
+    font-size:13px;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .chip.active{
+    background:var(--red);
+    border-color:var(--red);
+    color:var(--cream);
+  }
+
+  /* ---------- Grid ---------- */
+  .grid{
+    max-width:1200px;
+    margin:20px auto 0;
+    padding:0 20px 40px;
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(190px,1fr));
+    gap:14px;
+  }
+  .section-heading{
+    max-width:1200px;
+    margin:30px auto 0;
+    padding:0 20px;
+    font-size:15px;
+    color:var(--cream);
+    font-weight:700;
+    letter-spacing:0.04em;
+    border-top:1px solid var(--teal-800);
+    padding-top:16px;
+    scroll-margin-top:150px;
+  }
+  .card{
+    background:var(--teal-800);
+    border-radius:10px;
+    padding:14px;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    border:1px solid var(--teal-700);
+  }
+  .card .icon-wrap{
+    width:100%;
+    height:78px;
+    border-radius:8px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:38px;
+    background:var(--teal-700);
+  }
+  .card .name{
+    font-size:14.5px;
+    font-weight:600;
+    line-height:1.25;
+  }
+  .card .tag{
+    display:inline-block;
+    font-size:10px;
+    color:var(--red);
+    border:1px solid var(--red-dim);
+    padding:1px 6px;
+    border-radius:4px;
+    margin-left:5px;
+    vertical-align:middle;
+  }
+  .card .macros{
+    display:flex;
+    gap:10px;
+    font-size:11.5px;
+    color:var(--cream-dim);
+  }
+  .card .macros b{color:var(--cream);}
+  .portion-row{
+    display:flex;
+    gap:6px;
+    margin-top:2px;
+  }
+  .portion-btn{
+    flex:1;
+    background:var(--teal-900);
+    border:1px solid var(--teal-700);
+    color:var(--cream-dim);
+    border-radius:6px;
+    padding:5px 0;
+    font-size:12px;
+    cursor:pointer;
+  }
+  .portion-btn.active{
+    background:var(--cream);
+    color:var(--teal-950);
+    border-color:var(--cream);
+    font-weight:700;
+  }
+  .add-btn{
+    margin-top:4px;
+    background:var(--red);
+    color:var(--cream);
+    border:none;
+    border-radius:6px;
+    padding:9px 0;
+    font-size:13px;
+    font-weight:700;
+    cursor:pointer;
+    letter-spacing:0.02em;
+  }
+  .add-btn:hover{background:var(--red-dim);}
+  .add-btn:active{transform:scale(0.97);}
+
+  /* ---------- Plate log (bottom drawer) ---------- */
+  .plate-toggle{
+    position:fixed;
+    bottom:18px;
+    right:18px;
+    background:var(--red);
+    color:var(--cream);
+    border:none;
+    border-radius:100px;
+    padding:14px 20px;
+    font-size:14px;
+    font-weight:700;
+    cursor:pointer;
+    box-shadow:0 6px 18px rgba(0,0,0,0.4);
+    z-index:60;
+  }
+  .plate-drawer{
+    position:fixed;
+    bottom:0;
+    right:0;
+    width:340px;
+    max-width:92vw;
+    max-height:66vh;
+    background:var(--teal-900);
+    border:1px solid var(--teal-700);
+    border-bottom:none;
+    border-top-left-radius:14px;
+    border-top-right-radius:14px;
+    box-shadow:0 -8px 24px rgba(0,0,0,0.45);
+    z-index:59;
+    display:flex;
+    flex-direction:column;
+    transform:translateY(110%);
+    transition:transform .25s ease;
+  }
+  .plate-drawer.open{transform:translateY(0);}
+  .plate-header{
+    padding:14px 16px 10px;
+    border-bottom:1px solid var(--teal-800);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .plate-header h2{font-size:15px;margin:0;}
+  .plate-header .close{
+    background:none;border:none;color:var(--cream-dim);
+    font-size:18px;cursor:pointer;
+  }
+  .plate-list{
+    overflow-y:auto;
+    padding:8px 16px;
+    flex:1;
+  }
+  .plate-empty{
+    color:var(--cream-dim);
+    font-size:13px;
+    padding:20px 0;
+    text-align:center;
+  }
+  .plate-item{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:8px 0;
+    border-bottom:1px solid var(--teal-800);
+    font-size:13px;
+  }
+  .plate-item .pi-name{flex:1;}
+  .plate-item .pi-name .pi-portions{color:var(--cream-dim);font-size:11px;display:block;}
+  .plate-item .pi-remove{
+    background:none;border:none;color:var(--cream-dim);
+    font-size:15px;cursor:pointer;margin-left:8px;
+  }
+  .plate-item .pi-remove:hover{color:var(--red);}
+
+  .footnote{
+    max-width:1200px;
+    margin:0 auto 90px;
+    padding:0 20px;
+    font-size:11.5px;
+    color:var(--cream-dim);
+    line-height:1.5;
+  }
+
+  @media (max-width:640px){
+    .tally-stats{gap:14px;}
+    .tally-stat{min-width:60px;}
+    .tally-stat .num{font-size:20px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="tally-bar">
+  <div class="tally-inner">
+    <div class="brand">
+      <span class="k">KPOT</span>
+      <span class="sub">plate tally</span>
+    </div>
+    <div class="tally-stats">
+      <div class="tally-stat" id="stat-items"><div class="num">0</div><div class="label">portions</div></div>
+      <div class="tally-stat" id="stat-cal"><div class="num">0</div><div class="label">calories</div></div>
+      <div class="tally-stat" id="stat-protein"><div class="num">0g</div><div class="label">protein</div></div>
+      <div class="tally-stat" id="stat-cost"><div class="num">$0.00</div><div class="label">est. cost</div></div>
+    </div>
+    <button class="reset-btn" id="reset-btn">Clear plate</button>
+  </div>
+</div>
+
+<div class="chips" id="chips"></div>
+
+<div id="menu-root"></div>
+
+<button class="plate-toggle" id="plate-toggle">🍽️ My Plate</button>
+<div class="plate-drawer" id="plate-drawer">
+  <div class="plate-header">
+    <h2>My plate</h2>
+    <button class="close" id="plate-close">✕</button>
+  </div>
+  <div class="plate-list" id="plate-list"></div>
+</div>
+
+<p class="footnote">
+  Calories are taken directly from the KPOT menu. KPOT is all-you-can-eat with no per-item pricing,
+  so protein (g) and cost ($) per portion are rough estimates based on typical ingredient composition and
+  retail cost — use them as a general guide, not exact nutrition or pricing facts. "Dinner Item" tags mark
+  items only available on the dinner menu.
+</p>
+
+<script>
+const ITEMS = [
+  // ---- SLICED MEAT (Hot Pot) ----
+  {name:"Sliced Pork", cat:"Sliced Meat", cal:150, protein:18, cost:1.75, icon:"🥩", dinner:false},
+  {name:"Sliced Pork Belly", cat:"Sliced Meat", cal:330, protein:14, cost:2.25, icon:"🥓", dinner:false},
+  {name:"Sliced Beef Belly", cat:"Sliced Meat", cal:360, protein:14, cost:2.75, icon:"🥩", dinner:false},
+  {name:"Prime Brisket", cat:"Sliced Meat", cal:230, protein:19, cost:2.75, icon:"🥩", dinner:false},
+  {name:"Sliced Lamb", cat:"Sliced Meat", cal:100, protein:12, cost:2.25, icon:"🍖", dinner:false},
+  {name:"Sliced Chicken", cat:"Sliced Meat", cal:100, protein:18, cost:1.5, icon:"🍗", dinner:false},
+  {name:"Sliced Ribeye", cat:"Sliced Meat", cal:140, protein:14, cost:3.25, icon:"🥩", dinner:true},
+  {name:"Beef Tongue", cat:"Sliced Meat", cal:190, protein:15, cost:2.75, icon:"🥩", dinner:true},
+
+  // ---- SEAFOOD (shared) ----
+  {name:"Squid", cat:"Seafood", cal:80, protein:14, cost:1.75, icon:"🦑", dinner:false},
+  {name:"Swai Fish", cat:"Seafood", cal:80, protein:15, cost:1.5, icon:"🐟", dinner:false},
+  {name:"White Clams", cat:"Seafood", cal:70, protein:10, cost:2.25, icon:"🐚", dinner:false},
+  {name:"Clams", cat:"Seafood", cal:70, protein:10, cost:2.0, icon:"🐚", dinner:false},
+  {name:"Crawfish", cat:"Seafood", cal:70, protein:11, cost:2.25, icon:"🦞", dinner:false},
+  {name:"Mussels", cat:"Seafood", cal:80, protein:11, cost:1.75, icon:"🐚", dinner:false},
+  {name:"Baby Octopus", cat:"Seafood", cal:90, protein:14, cost:2.75, icon:"🐙", dinner:true},
+  {name:"Oysters", cat:"Seafood", cal:60, protein:7, cost:2.75, icon:"🦪", dinner:true},
+  {name:"Shrimp Prawns", cat:"Seafood", cal:90, protein:17, cost:3.25, icon:"🍤", dinner:true},
+  {name:"Snow Crab", cat:"Seafood", cal:60, protein:11, cost:3.75, icon:"🦀", dinner:true},
+  {name:"Garlic Shrimp", cat:"Seafood", cal:90, protein:15, cost:3.0, icon:"🍤", dinner:false},
+  {name:"Spicy Calamari", cat:"Seafood", cal:110, protein:14, cost:2.25, icon:"🦑", dinner:false},
+  {name:"Spicy Fish Fillet", cat:"Seafood", cal:100, protein:16, cost:2.25, icon:"🐟", dinner:false},
+  {name:"Spicy Baby Octopus", cat:"Seafood", cal:90, protein:14, cost:2.75, icon:"🐙", dinner:true},
+  {name:"Spicy Salmon", cat:"Seafood", cal:170, protein:17, cost:3.75, icon:"🐟", dinner:true},
+
+  // ---- MEAT / SIDES (Hot Pot) ----
+  {name:"Crab Meat", cat:"Meat & Sides", cal:90, protein:13, cost:2.25, icon:"🦀", dinner:false},
+  {name:"Spam", cat:"Meat & Sides", cal:270, protein:12, cost:1.75, icon:"🥫", dinner:false},
+  {name:"Mini Sausages", cat:"Meat & Sides", cal:250, protein:12, cost:1.75, icon:"🌭", dinner:false},
+  {name:"Shrimp Dumplings", cat:"Meat & Sides", cal:170, protein:8, cost:1.75, icon:"🥟", dinner:false},
+  {name:"Gyoza", cat:"Meat & Sides", cal:210, protein:8, cost:1.75, icon:"🥟", dinner:false},
+  {name:"Cattle Tripe", cat:"Meat & Sides", cal:70, protein:9, cost:1.75, icon:"🍢", dinner:false},
+  {name:"Quail Eggs", cat:"Meat & Sides", cal:140, protein:10, cost:1.5, icon:"🥚", dinner:false},
+  {name:"Tempura", cat:"Meat & Sides", cal:180, protein:7, cost:1.75, icon:"🍤", dinner:false},
+  {name:"Fish Meatballs", cat:"Meat & Sides", cal:140, protein:9, cost:1.5, icon:"🍡", dinner:false},
+  {name:"Fish Cakes", cat:"Meat & Sides", cal:170, protein:10, cost:1.5, icon:"🍥", dinner:false},
+  {name:"Shumai", cat:"Meat & Sides", cal:210, protein:9, cost:1.75, icon:"🥟", dinner:false},
+  {name:"Fish Roe Bags", cat:"Meat & Sides", cal:180, protein:9, cost:1.75, icon:"🧧", dinner:false},
+  {name:"Boneless Duck Feet", cat:"Meat & Sides", cal:170, protein:12, cost:2.25, icon:"🍖", dinner:false},
+  {name:"Beef Meatballs", cat:"Meat & Sides", cal:220, protein:14, cost:2.25, icon:"🍡", dinner:true},
+  {name:"Fish Roe Balls", cat:"Meat & Sides", cal:150, protein:9, cost:2.0, icon:"🍡", dinner:true},
+  {name:"Lobster Balls", cat:"Meat & Sides", cal:150, protein:10, cost:2.75, icon:"🦞", dinner:true},
+
+  // ---- SOY BEAN ----
+  {name:"Fried Tofu", cat:"Soy Bean", cal:230, protein:12, cost:1.0, icon:"🧈", dinner:false},
+  {name:"Soft Tofu", cat:"Soy Bean", cal:45, protein:5, cost:0.75, icon:"🧈", dinner:false},
+  {name:"Frozen Tofu", cat:"Soy Bean", cal:81, protein:8, cost:0.75, icon:"🧈", dinner:false},
+  {name:"Fried Tofu Skin", cat:"Soy Bean", cal:270, protein:20, cost:1.25, icon:"🧈", dinner:false},
+  {name:"Bean Curd Stick", cat:"Soy Bean", cal:125, protein:15, cost:1.0, icon:"🧈", dinner:false},
+  {name:"Fried Dough Stick", cat:"Soy Bean", cal:370, protein:6, cost:1.0, icon:"🥖", dinner:false},
+
+  // ---- VEGETABLES (shared) ----
+  {name:"Spinach", cat:"Vegetables", cal:20, protein:2, cost:0.75, icon:"🥬", dinner:false},
+  {name:"Crown Daisy", cat:"Vegetables", cal:20, protein:2, cost:0.75, icon:"🌿", dinner:false},
+  {name:"Watercress", cat:"Vegetables", cal:10, protein:1, cost:0.75, icon:"🌿", dinner:false},
+  {name:"Green Leaf Lettuce", cat:"Vegetables", cal:15, protein:1, cost:0.5, icon:"🥬", dinner:false},
+  {name:"Broccoli", cat:"Vegetables", cal:30, protein:2, cost:0.75, icon:"🥦", dinner:false},
+  {name:"Bok Choy", cat:"Vegetables", cal:10, protein:1, cost:0.5, icon:"🥬", dinner:false},
+  {name:"Shiitake Mushroom", cat:"Vegetables", cal:30, protein:2, cost:1.25, icon:"🍄", dinner:false},
+  {name:"Beech Mushroom", cat:"Vegetables", cal:15, protein:2, cost:1.25, icon:"🍄", dinner:false},
+  {name:"Napa", cat:"Vegetables", cal:10, protein:1, cost:0.5, icon:"🥬", dinner:false},
+  {name:"Seaweed Knots", cat:"Vegetables", cal:20, protein:2, cost:1.0, icon:"🌿", dinner:false},
+  {name:"Mung Bean Sprout", cat:"Vegetables", cal:25, protein:2, cost:0.5, icon:"🌱", dinner:false},
+  {name:"Pumpkin", cat:"Vegetables", cal:20, protein:1, cost:0.75, icon:"🎃", dinner:false},
+  {name:"Daikon", cat:"Vegetables", cal:15, protein:1, cost:0.5, icon:"🥕", dinner:false},
+  {name:"Fried Taro", cat:"Vegetables", cal:180, protein:2, cost:1.25, icon:"🍠", dinner:false},
+  {name:"Enoki Mushroom", cat:"Vegetables", cal:35, protein:2, cost:1.25, icon:"🍄", dinner:false},
+  {name:"Lotus Root", cat:"Vegetables", cal:60, protein:1, cost:1.0, icon:"🌿", dinner:false},
+  {name:"Eggplant", cat:"Vegetables", cal:20, protein:1, cost:0.75, icon:"🍆", dinner:false},
+  {name:"Potato", cat:"Vegetables", cal:70, protein:2, cost:0.75, icon:"🥔", dinner:false},
+  {name:"Baby Bamboo Shoot", cat:"Vegetables", cal:25, protein:2, cost:0.75, icon:"🎍", dinner:false},
+  {name:"Corn", cat:"Vegetables", cal:70, protein:2, cost:0.75, icon:"🌽", dinner:false},
+  {name:"King Oyster Mushroom", cat:"Vegetables", cal:20, protein:2, cost:1.25, icon:"🍄", dinner:false},
+  {name:"Black Fungus", cat:"Vegetables", cal:25, protein:1, cost:0.75, icon:"🍄", dinner:false},
+  {name:"Sweet Potato", cat:"Vegetables", cal:70, protein:1, cost:0.75, icon:"🍠", dinner:false},
+  {name:"Zucchini", cat:"Vegetables", cal:15, protein:1, cost:0.6, icon:"🥒", dinner:false},
+  {name:"Pineapple", cat:"Vegetables", cal:45, protein:0.5, cost:0.6, icon:"🍍", dinner:false},
+  {name:"Pepper", cat:"Vegetables", cal:25, protein:1, cost:0.6, icon:"🫑", dinner:false},
+  {name:"Onion", cat:"Vegetables", cal:35, protein:1, cost:0.5, icon:"🧅", dinner:false},
+  {name:"Garlic", cat:"Vegetables", cal:130, protein:5, cost:0.75, icon:"🧄", dinner:false},
+
+  // ---- NOODLES ----
+  {name:"Vermicelli", cat:"Noodles", cal:95, protein:1, cost:0.75, icon:"🍜", dinner:false},
+  {name:"Udon", cat:"Noodles", cal:120, protein:4, cost:1.0, icon:"🍜", dinner:false},
+  {name:"Mei Fun", cat:"Noodles", cal:160, protein:3, cost:0.75, icon:"🍜", dinner:false},
+  {name:"Ramen Noodle", cat:"Noodles", cal:370, protein:9, cost:1.25, icon:"🍜", dinner:false},
+  {name:"Sweet Potato Noodle", cat:"Noodles", cal:100, protein:1, cost:1.0, icon:"🍜", dinner:false},
+  {name:"Fresh Pho Noodle", cat:"Noodles", cal:238, protein:5, cost:1.25, icon:"🍜", dinner:false},
+  {name:"Rice Cake", cat:"Noodles", cal:330, protein:5, cost:1.25, icon:"🍚", dinner:false},
+  {name:"White Rice", cat:"Noodles", cal:110, protein:2, cost:0.5, icon:"🍚", dinner:false},
+
+  // ---- BEEF (Korean BBQ) ----
+  {name:"Beef Bulgogi", cat:"Beef", cal:180, protein:16, cost:2.75, icon:"🥩", dinner:false},
+  {name:"Spicy Beef Bulgogi", cat:"Beef", cal:200, protein:16, cost:2.75, icon:"🌶️", dinner:false},
+  {name:"KPOT Steak", cat:"Beef", cal:280, protein:22, cost:5.5, icon:"🥩", dinner:true},
+  {name:"Fingers Ribs", cat:"Beef", cal:240, protein:18, cost:4.5, icon:"🍖", dinner:true},
+  {name:"KPOT Short Rib", cat:"Beef", cal:300, protein:20, cost:5.0, icon:"🍖", dinner:false},
+  {name:"Hanger Steak", cat:"Beef", cal:220, protein:20, cost:4.75, icon:"🥩", dinner:true},
+  {name:"Angus Chuck Flap Tail", cat:"Beef", cal:240, protein:19, cost:4.75, icon:"🥩", dinner:true},
+
+  // ---- PORK & CHICKEN (Korean BBQ) ----
+  {name:"Chicken Bulgogi", cat:"Pork & Chicken", cal:120, protein:18, cost:2.0, icon:"🍗", dinner:false},
+  {name:"Spicy Chicken Bulgogi", cat:"Pork & Chicken", cal:130, protein:18, cost:2.0, icon:"🌶️", dinner:false},
+  {name:"Garlic Chicken", cat:"Pork & Chicken", cal:150, protein:17, cost:2.25, icon:"🍗", dinner:false},
+  {name:"Spicy Pork Bulgogi", cat:"Pork & Chicken", cal:210, protein:15, cost:2.25, icon:"🌶️", dinner:false},
+  {name:"Pork Belly (Regular)", cat:"Pork & Chicken", cal:330, protein:14, cost:2.25, icon:"🥓", dinner:false},
+  {name:"Spicy Pork Belly", cat:"Pork & Chicken", cal:330, protein:14, cost:2.5, icon:"🌶️", dinner:false},
+  {name:"Smoked Garlic Pork Belly", cat:"Pork & Chicken", cal:320, protein:15, cost:2.75, icon:"🥓", dinner:false},
+  {name:"KPOT Pork Belly", cat:"Pork & Chicken", cal:340, protein:15, cost:2.75, icon:"🥓", dinner:false},
+  {name:"Signature Pork Cheek", cat:"Pork & Chicken", cal:220, protein:16, cost:3.25, icon:"🥓", dinner:true},
+  {name:"Sausage", cat:"Pork & Chicken", cal:229, protein:11, cost:2.0, icon:"🌭", dinner:false},
+];
+
+const CATEGORIES = Array.from(new Set(ITEMS.map(i=>i.cat)));
+
+let plate = []; // {name, cal, protein, cost, portions, ts}
+let portionChoice = {}; // per-item selected portion count, default 1
+
+function fmtMoney(n){ return "$" + n.toFixed(2); }
+
+function slugify(cat){ return "cat-" + cat.toLowerCase().replace(/[^a-z0-9]+/g,'-'); }
+
+function renderChips(){
+  const chipsEl = document.getElementById('chips');
+  chipsEl.innerHTML = "";
+  CATEGORIES.forEach(cat=>{
+    const b = document.createElement('button');
+    b.className = "chip";
+    b.textContent = cat;
+    b.onclick = ()=>{
+      document.getElementById(slugify(cat)).scrollIntoView({behavior:'smooth'});
+    };
+    chipsEl.appendChild(b);
+  });
+}
+
+function renderGrid(){
+  const root = document.getElementById('menu-root');
+  root.innerHTML = "";
+
+  const grouped = {};
+  ITEMS.forEach(item=>{
+    grouped[item.cat] = grouped[item.cat] || [];
+    grouped[item.cat].push(item);
+  });
+
+  CATEGORIES.forEach(cat=>{
+    const heading = document.createElement('div');
+    heading.className = "section-heading";
+    heading.id = slugify(cat);
+    heading.textContent = cat;
+    root.appendChild(heading);
+
+    const grid = document.createElement('div');
+    grid.className = "grid";
+
+    grouped[cat].forEach(item=>{
+      const key = item.name;
+      if(portionChoice[key]===undefined) portionChoice[key] = 1;
+
+      const card = document.createElement('div');
+      card.className = "card";
+
+      card.innerHTML = `
+        <div class="icon-wrap">${item.icon}</div>
+        <div class="name">${item.name}${item.dinner ? '<span class="tag">Dinner</span>' : ''}</div>
+        <div class="macros">
+          <span><b>${item.cal}</b> cal</span>
+          <span><b>${item.protein}g</b> pro</span>
+          <span><b>${fmtMoney(item.cost)}</b></span>
+        </div>
+        <div class="portion-row">
+          ${[1,2,3].map(p=>`<button class="portion-btn ${portionChoice[key]===p?'active':''}" data-p="${p}">${p}x</button>`).join('')}
+        </div>
+        <button class="add-btn">Add to plate</button>
+      `;
+
+      card.querySelectorAll('.portion-btn').forEach(btn=>{
+        btn.onclick = ()=>{
+          portionChoice[key] = parseInt(btn.dataset.p);
+          card.querySelectorAll('.portion-btn').forEach(b=>b.classList.remove('active'));
+          btn.classList.add('active');
+        };
+      });
+
+      card.querySelector('.add-btn').onclick = ()=>{
+        addToPlate(item, portionChoice[key]);
+      };
+
+      grid.appendChild(card);
+    });
+
+    root.appendChild(grid);
+  });
+}
+
+function addToPlate(item, portions){
+  plate.push({
+    name:item.name,
+    cal:item.cal*portions,
+    protein:item.protein*portions,
+    cost:item.cost*portions,
+    portions:portions,
+    ts:Date.now()
+  });
+  updateTotals(true);
+  renderPlate();
+}
+
+function removeFromPlate(ts){
+  plate = plate.filter(p=>p.ts!==ts);
+  updateTotals(false);
+  renderPlate();
+}
+
+function updateTotals(pop){
+  const totalPortions = plate.reduce((s,p)=>s+p.portions,0);
+  const totalCal = plate.reduce((s,p)=>s+p.cal,0);
+  const totalProtein = plate.reduce((s,p)=>s+p.protein,0);
+  const totalCost = plate.reduce((s,p)=>s+p.cost,0);
+
+  document.querySelector('#stat-items .num').textContent = totalPortions;
+  document.querySelector('#stat-cal .num').textContent = Math.round(totalCal);
+  document.querySelector('#stat-protein .num').textContent = Math.round(totalProtein) + "g";
+  document.querySelector('#stat-cost .num').textContent = fmtMoney(totalCost);
+
+  if(pop){
+    ['stat-items','stat-cal','stat-protein','stat-cost'].forEach(id=>{
+      const el = document.getElementById(id);
+      el.classList.add('pop');
+      setTimeout(()=>el.classList.remove('pop'), 220);
+    });
+  }
+}
+
+function renderPlate(){
+  const list = document.getElementById('plate-list');
+  list.innerHTML = "";
+  if(plate.length===0){
+    list.innerHTML = `<div class="plate-empty">Your plate is empty — add something from the menu.</div>`;
+    return;
+  }
+  // newest first
+  [...plate].reverse().forEach(p=>{
+    const row = document.createElement('div');
+    row.className = "plate-item";
+    row.innerHTML = `
+      <div class="pi-name">${p.name}<span class="pi-portions">${p.portions}x — ${Math.round(p.cal)} cal · ${Math.round(p.protein)}g · ${fmtMoney(p.cost)}</span></div>
+      <button class="pi-remove" title="Remove">✕</button>
+    `;
+    row.querySelector('.pi-remove').onclick = ()=>removeFromPlate(p.ts);
+    list.appendChild(row);
+  });
+}
+
+document.getElementById('reset-btn').onclick = ()=>{
+  if(plate.length===0) return;
+  if(confirm("Clear your whole plate?")){
+    plate = [];
+    updateTotals(false);
+    renderPlate();
+  }
+};
+
+const drawer = document.getElementById('plate-drawer');
+document.getElementById('plate-toggle').onclick = ()=> drawer.classList.add('open');
+document.getElementById('plate-close').onclick = ()=> drawer.classList.remove('open');
+
+renderChips();
+renderGrid();
+renderPlate();
+updateTotals(false);
+</script>
+</body>
+</html>
